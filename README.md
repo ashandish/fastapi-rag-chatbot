@@ -20,8 +20,8 @@ Production-grade retrieval-augmented chatbot with admin-managed embeddings, prog
 - `LLM_PROVIDER=local` uses an OpenAI-compatible local endpoint (e.g., Ollama or llama.cpp server) at `LOCAL_LLM_ENDPOINT` (default `http://localhost:11434/v1`).
   - Pick model size with `LOCAL_LLM_SIZE=small|large`.
     - `small` → `LOCAL_LLM_MODEL_SMALL` (default `llama3:8b-instruct-q4_0`) and embeddings `BAAI/bge-small-en` (good for low-end hardware).
-    - `large` → `LOCAL_LLM_MODEL_LARGE` (default `llama3:70b-instruct`) and embeddings `BAAI/bge-large-en` (for high-end hardware).
-- Image encoder follows `EMBED_MODE` (cpu/gpu); text encoder switches automatically based on the LLM size above.
+    - `large` → `LOCAL_LLM_MODEL_LARGE` (default `llama3:70b-instruct`).
+- Embeddings are shared: `TEXT_EMBED_MODEL_CPU/GPU` and `IMAGE_EMBED_MODEL_CPU/GPU` selected by `EMBED_MODE`, regardless of LLM provider.
 
 ## Configuration (.env)
 Populate `.env` (defaults shown):
@@ -45,8 +45,6 @@ TEXT_EMBED_MODEL_CPU=all-MiniLM-L6-v2
 IMAGE_EMBED_MODEL_CPU=clip-ViT-B-32
 TEXT_EMBED_MODEL_GPU=all-mpnet-base-v2
 IMAGE_EMBED_MODEL_GPU=clip-ViT-L-14
-TEXT_EMBED_MODEL_LOCAL_SMALL=BAAI/bge-small-en
-TEXT_EMBED_MODEL_LOCAL_LARGE=BAAI/bge-large-en
 
 # Retrieval
 CHUNK_SIZE_TOKENS=1024

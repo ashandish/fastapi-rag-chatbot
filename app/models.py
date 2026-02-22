@@ -23,8 +23,6 @@ class Settings(BaseSettings):
     image_embed_model_cpu: str = Field(default="clip-ViT-B-32", alias="IMAGE_EMBED_MODEL_CPU")
     text_embed_model_gpu: str = Field(default="all-mpnet-base-v2", alias="TEXT_EMBED_MODEL_GPU")
     image_embed_model_gpu: str = Field(default="clip-ViT-L-14", alias="IMAGE_EMBED_MODEL_GPU")
-    text_embed_model_local_small: str = Field(default="BAAI/bge-small-en", alias="TEXT_EMBED_MODEL_LOCAL_SMALL")
-    text_embed_model_local_large: str = Field(default="BAAI/bge-large-en", alias="TEXT_EMBED_MODEL_LOCAL_LARGE")
 
     chunk_size_tokens: int = Field(default=1024, alias="CHUNK_SIZE_TOKENS")
     top_k_initial: int = Field(default=50, alias="TOP_K_INITIAL")
