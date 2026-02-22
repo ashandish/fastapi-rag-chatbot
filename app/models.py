@@ -4,6 +4,16 @@ from typing import Literal
 import os
 
 class Settings(BaseSettings):
+    # LLM provider selection
+    llm_provider: Literal["openai", "local"] = Field(default="openai", alias="LLM_PROVIDER")
+    llm_model_openai: str = Field(default="gpt-4o-mini", alias="LLM_MODEL_OPENAI")
+
+    # Local LLM (OpenAI-compatible server such as Ollama or llama.cpp server)
+    local_llm_endpoint: str = Field(default="http://localhost:11434/v1", alias="LOCAL_LLM_ENDPOINT")
+    local_llm_size: Literal["small", "large"] = Field(default="small", alias="LOCAL_LLM_SIZE")  # small=8B Q4, large=70B
+    local_llm_model_small: str = Field(default="llama3:8b-instruct-q4_0", alias="LOCAL_LLM_MODEL_SMALL")
+    local_llm_model_large: str = Field(default="llama3:70b-instruct", alias="LOCAL_LLM_MODEL_LARGE")
+
     # OpenAI & embeddings
     openai_api_key: str = Field(default="", alias="OPENAI_API_KEY")
     embed_store_path: str = Field(default="/data/chroma_store", alias="EMBED_STORE_PATH")
@@ -13,6 +23,8 @@ class Settings(BaseSettings):
     image_embed_model_cpu: str = Field(default="clip-ViT-B-32", alias="IMAGE_EMBED_MODEL_CPU")
     text_embed_model_gpu: str = Field(default="all-mpnet-base-v2", alias="TEXT_EMBED_MODEL_GPU")
     image_embed_model_gpu: str = Field(default="clip-ViT-L-14", alias="IMAGE_EMBED_MODEL_GPU")
+    text_embed_model_local_small: str = Field(default="BAAI/bge-small-en", alias="TEXT_EMBED_MODEL_LOCAL_SMALL")
+    text_embed_model_local_large: str = Field(default="BAAI/bge-large-en", alias="TEXT_EMBED_MODEL_LOCAL_LARGE")
 
     chunk_size_tokens: int = Field(default=1024, alias="CHUNK_SIZE_TOKENS")
     top_k_initial: int = Field(default=50, alias="TOP_K_INITIAL")

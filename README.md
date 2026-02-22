@@ -15,23 +15,50 @@ Production-grade retrieval-augmented chatbot with admin-managed embeddings, prog
 - Chat flow: `/chat` opens a WebSocket to `/ws/chat`. Messages trigger `answer_question`: fetch candidates from Chroma, optionally rerank, and send top context to OpenAI. Responses stream back to the browser. If no collection exists, the bot instructs the user to log in and build embeddings.
 - Startup: `app/main.py` warms up embedding and rerank models on startup to avoid first-request latency and registers any enabled OAuth/SAML providers.
 
+### LLM provider options (cloud vs on‑prem)
+- `LLM_PROVIDER=openai` (default) uses OpenAI Chat Completions with `LLM_MODEL_OPENAI` (default `gpt-4o-mini`).
+- `LLM_PROVIDER=local` uses an OpenAI-compatible local endpoint (e.g., Ollama or llama.cpp server) at `LOCAL_LLM_ENDPOINT` (default `http://localhost:11434/v1`).
+  - Pick model size with `LOCAL_LLM_SIZE=small|large`.
+    - `small` → `LOCAL_LLM_MODEL_SMALL` (default `llama3:8b-instruct-q4_0`) and embeddings `BAAI/bge-small-en` (good for low-end hardware).
+    - `large` → `LOCAL_LLM_MODEL_LARGE` (default `llama3:70b-instruct`) and embeddings `BAAI/bge-large-en` (for high-end hardware).
+- Image encoder follows `EMBED_MODE` (cpu/gpu); text encoder switches automatically based on the LLM size above.
+
 ## Configuration (.env)
 Populate `.env` (defaults shown):
 
 ```env
+# LLM selection
+LLM_PROVIDER=openai                 # or local
+LLM_MODEL_OPENAI=gpt-4o-mini
 OPENAI_API_KEY=
+
+# Local LLM (OpenAI-compatible, e.g., Ollama/llama.cpp server)
+LOCAL_LLM_ENDPOINT=http://localhost:11434/v1
+LOCAL_LLM_SIZE=small               # small (Llama 3 8B Q4) or large (Llama 3 70B)
+LOCAL_LLM_MODEL_SMALL=llama3:8b-instruct-q4_0
+LOCAL_LLM_MODEL_LARGE=llama3:70b-instruct
+
+# Embeddings
 EMBED_STORE_PATH=/data/chroma_store
 EMBED_MODE=cpu
 TEXT_EMBED_MODEL_CPU=all-MiniLM-L6-v2
 IMAGE_EMBED_MODEL_CPU=clip-ViT-B-32
 TEXT_EMBED_MODEL_GPU=all-mpnet-base-v2
 IMAGE_EMBED_MODEL_GPU=clip-ViT-L-14
+TEXT_EMBED_MODEL_LOCAL_SMALL=BAAI/bge-small-en
+TEXT_EMBED_MODEL_LOCAL_LARGE=BAAI/bge-large-en
+
+# Retrieval
 CHUNK_SIZE_TOKENS=1024
 TOP_K_INITIAL=50
 TOP_K_RERANKED=5
 RERANK_ENABLED=true
+
+# Upload limits
 MAX_FILE_SIZE_MB=10
 MAX_TOTAL_DOC_SIZE_MB=1024
+
+# Admin & UI
 ADMIN_USERNAME=admin
 ADMIN_PASSWORD=
 ADMIN_PASSWORD_HASH=
@@ -103,7 +130,7 @@ Visit:
 ## Code map
 - `app/main.py` — FastAPI app, routes, WebSocket chat handler, admin session handling, OAuth/SAML provider registration, model warm-up.
 - `app/embeddings.py` — Upload handling, token-based chunking, text/image embeddings, and Chroma collection operations.
-- `app/retrieval.py` — Similarity search, optional cross-encoder rerank, and OpenAI completion request assembly.
+- `app/retrieval.py` — Similarity search, optional cross-encoder rerank, and Chat Completions assembly (OpenAI or local OpenAI-compatible server).
 - `app/tasks.py` — Celery task to build/reset the vector store with Redis-backed progress reporting.
 - `app/celery_app.py` — Celery instance configured for Redis broker/backend.
 - `app/templates/*` and `app/static/*` — Jinja2 views and static assets for chat/admin/embeddings pages.

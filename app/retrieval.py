@@ -5,7 +5,6 @@ import httpx
 from sentence_transformers import CrossEncoder
 
 OPENAI_API_URL = "https://api.openai.com/v1/chat/completions"
-DEFAULT_MODEL = "gpt-4o-mini"
 
 SYSTEM_PROMPT = (
     "You are a helpful RAG chatbot. Use the provided context snippets to answer accurately. "
@@ -31,9 +30,6 @@ def rerank(query: str, candidates: List[Dict[str, Any]], top_k: int) -> List[Dic
     return candidates[:top_k]
 
 def synthesize_answer(question: str, topk: List[Dict[str, Any]]) -> str:
-    if not settings.openai_api_key:
-        return "OpenAI API key not configured. Set OPENAI_API_KEY."
-
     context_blocks = []
     for i, item in enumerate(topk, start=1):
         meta = item.get("meta", {}) or {}
@@ -46,18 +42,38 @@ def synthesize_answer(question: str, topk: List[Dict[str, Any]]) -> str:
         {"role": "user", "content": f"Question: {question}\n\nContext:\n" + "\n---\n".join(context_blocks)},
     ]
 
-    headers = {"Authorization": f"Bearer {settings.openai_api_key}"}
+    # Pick endpoint/model depending on provider.
+    if settings.llm_provider == "openai":
+        if not settings.openai_api_key:
+            return "OpenAI API key not configured. Set OPENAI_API_KEY."
+        url = OPENAI_API_URL
+        headers = {"Authorization": f"Bearer {settings.openai_api_key}"}
+        model_name = settings.llm_model_openai
+    else:
+        # OpenAI-compatible local server (e.g., Ollama or llama.cpp server).
+        base = settings.local_llm_endpoint.rstrip("/")
+        url = f"{base}/chat/completions"
+        headers = {}
+        model_name = (
+            settings.local_llm_model_large
+            if settings.local_llm_size == "large"
+            else settings.local_llm_model_small
+        )
+
     payload = {
-        "model": DEFAULT_MODEL,
+        "model": model_name,
         "messages": messages,
         "temperature": 0.2,
     }
 
-    with httpx.Client(timeout=60) as client:
-        r = client.post(OPENAI_API_URL, headers=headers, json=payload)
-        r.raise_for_status()
-        data = r.json()
-        return data["choices"][0]["message"]["content"].strip()
+    try:
+        with httpx.Client(timeout=60) as client:
+            r = client.post(url, headers=headers, json=payload)
+            r.raise_for_status()
+            data = r.json()
+            return data["choices"][0]["message"]["content"].strip()
+    except Exception as exc:
+        return f"LLM request failed: {exc}"
 
 def answer_question(q: str) -> str:
     if collection_size() == 0:

@@ -23,6 +23,16 @@ _collection = _chroma_client.get_or_create_collection(
 _model_cache: Dict[str, SentenceTransformer] = {}
 
 def _model_name_pair():
+    # Choose embedding models based on provider/size so on-prem LLM uses matching BGE models.
+    if settings.llm_provider == "local":
+        text_name = (
+            settings.text_embed_model_local_large
+            if settings.local_llm_size == "large"
+            else settings.text_embed_model_local_small
+        )
+        # Keep image encoder tied to hardware mode; local path is text-only anyway.
+        image_name = settings.image_embed_model_gpu if settings.embed_mode == "gpu" else settings.image_embed_model_cpu
+        return text_name, image_name
     if settings.embed_mode == "gpu":
         return settings.text_embed_model_gpu, settings.image_embed_model_gpu
     else:
