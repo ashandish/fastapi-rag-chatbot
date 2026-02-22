@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Admin Login</title>
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+<header class="header">
+  <h1>Admin Login</h1>
+  <nav>
+    <a href="/">Home</a>
+    <a href="/chat">Chat</a>
+  </nav>
+</header>
+<main class="container">
+  <section class="card">
+    {% if error %}
+      <div class="flash err">{{ error }}</div>
+    {% endif %}
+    <form method="post" action="/admin/login">
+      <div class="form-row">
+        <label>Username</label>
+        <input name="username" autocomplete="username" required />
+      </div>
+      <div class="form-row">
+        <label>Password</label>
+        <input type="password" name="password" autocomplete="current-password" required />
+      </div>
+      <button type="submit">Login</button>
+    </form>
+    <p class="notice">
+      If this is your first login with the default password, you'll be asked to change it.
+    </p>
+    <p class="notice" style="margin-top:12px;">
+      Or use one of the SSO providers (if enabled in .env):
+      <br/>
+      <a href="/login/google">Login with Google</a> |
+      <a href="/login/aad">Login with Azure AD</a> |
+      <a href="/login/okta">Login with Okta</a> |
+      <a href="/login/auth0">Login with Auth0</a> |
+      <a href="/login/saml">Login with SAML</a>
+    </p>
+  </section>
+</main>
+</body>
+</html>

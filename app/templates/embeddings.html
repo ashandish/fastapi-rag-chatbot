@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Generate Embeddings</title>
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+<header class="header">
+  <h1>Generate Embeddings</h1>
+  <nav>
+    <a href="/">Home</a>
+    <a href="/chat">Chat</a>
+    <a href="/admin/change-password">Change Password</a>
+    <a href="/admin/logout">Admin Logout</a>
+  </nav>
+</header>
+<main class="container">
+  <section class="card">
+    <div id="step-upload">
+      <p class="notice">Upload one or more documents, then click Process.</p>
+      <div class="actions">
+        <label>
+          <input type="radio" name="action" value="add" checked> Add to existing (or create new)
+        </label>
+        <label>
+          <input type="radio" name="action" value="clean"> Clean existing and rebuild
+        </label>
+      </div>
+      <input id="file-input" type="file" multiple />
+      <button id="btn-process">Process</button>
+    </div>
+
+    <div class="progress" id="progress" style="display:none;">
+      <div class="bar" id="bar" style="width:0%;"></div>
+      <div class="pct" id="pct">0%</div>
+    </div>
+
+    <div id="status" class="flash" style="display:none;"></div>
+
+    <div id="post-complete" style="display:none; margin-top:16px;">
+      <p class="notice">You can upload more files or finish.</p>
+      <input id="file-input-more" type="file" multiple />
+      <button id="btn-process-more">Process More</button>
+      <button id="btn-finish" style="margin-left:8px;">Finish</button>
+    </div>
+  </section>
+</main>
+<script src="/static/embed.js"></script>
+</body>
+</html>

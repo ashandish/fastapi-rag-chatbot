@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Chat</title>
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+<header class="header">
+  <h1>Chat</h1>
+  <nav>
+    <a href="/">Home</a>
+    {% if is_admin %}
+      <a href="/embeddings">Generate Embeddings</a>
+      <a href="/admin/change-password">Change Password</a>
+      <a href="/admin/logout">Admin Logout</a>
+    {% else %}
+      <a href="/admin/login">Admin</a>
+    {% endif %}
+  </nav>
+</header>
+<main class="container">
+  <section class="card">
+    <div id="messages" class="messages"></div>
+    <div class="composer">
+      <input id="input" placeholder="Type your question..." />
+      <button id="send">Send</button>
+    </div>
+  </section>
+</main>
+<script>
+  const WELCOME_MSG = {{ welcome|tojson }};
+</script>
+<script src="/static/app.js"></script>
+</body>
+</html>

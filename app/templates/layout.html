@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>RAG Chatbot</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <header class="header">
+      <h1>RAG Chatbot</h1>
+      <nav>
+        <a href="/chat">Chat</a>
+        {% if is_admin %}
+          <a href="/embeddings">Generate Embeddings</a>
+          <a href="/admin/change-password">Change Password</a>
+          <a href="/admin/logout">Admin Logout</a>
+        {% else %}
+          <a href="/admin/login">Admin</a>
+        {% endif %}
+      </nav>
+    </header>
+    <main class="container">
+      <section class="card">
+        <h2>Welcome</h2>
+        <p>
+          Admins can manage embeddings via the Admin link.<br />
+          Users can chat at <a href="/chat">/chat</a>.
+        </p>
+      </section>
+    </main>
+  </body>
+</html>

@@ -1,0 +1,380 @@
+Binary Classification based on clean_title column 
+
+Write a Python script that performs the following steps:
+
+1.  **Data Loading**: Load the TSV files for the train, test, and validation datasets using Pandas. The file paths are:
+    * Train: `/content/drive/MyDrive/FakedditDataSet/all_samples (also includes non multimodal)-20250601T164249Z-1-001/all_samples (also includes non multimodal)/all_train.tsv`
+    * Test: `/content/drive/MyDrive/FakedditDataSet/all_samples (also includes non multimodal)-20250601T164249Z-1-001/all_samples (also includes non multimodal)/all_test_public.tsv`
+    * Validation: `/content/drive/MyDrive/FakedditDataSet/all_samples (also includes non multimodal)-20250601T164249Z-1-001/all_samples (also includes non multimodal)/all_validate.tsv`
+
+2.  **Generate and Save Embeddings**: Generate BERT embeddings for the `clean_title` column of the training dataset using the `all-MiniLM-L6-v2` model from `sentence-transformers`. Save these embeddings along with the `id`, `clean_title`, `title`, and `2_way_label` to a persistent ChromaDB database.
+    * ChromaDB Path: `/content/drive/MyDrive/FakedditTitleEmbedding`
+    * ChromaDB Collection Name: `fakeddit_train_embeddings`
+    * The `clean_title` will be stored as the document and the `id`, `title`, and `2_way_label` should be stored as metadata.
+	* You must make sure that if session is restarted, the Embeddings should continue to save from where the previous attempt left off. 
+	* Filter out rows where 'clean_title' is not a string or is NaN.
+	* Generate and save emebeddings to chroma DB in batches of 5000
+
+3.  **Train a Neural Network**: Train a binary classifier model using the embeddings from the `fakeddit_train_embeddings` collection as input features and the `2_way_label` as the target.
+    * Use the TensorFlow/Keras library to build the model.
+    * Save the trained model to `/content/drive/MyDrive/FakedditTextModel/model.h5`.
+	* Retrieve data in smaller batches, batch size = 5000  to avoid "too many SQL variables" error
+
+4.  **Model Evaluation**:
+    * **Test Dataset**: Load the public test dataset, generate embeddings for the `clean_title` column, and use the saved model from `/content/drive/MyDrive/FakedditTextModel/model.h5` to make predictions. Calculate and print the **Precision, Accuracy, Recall, and F1 Score**.
+    * **Validation Dataset**: Load the validation dataset, generate embeddings for the `clean_title` column, and use the saved model to make predictions. Calculate and print the **Precision, Accuracy, Recall, and F1 Score**.
+	
+	
+Binary Classification based on clean_title and image_url column 
+
+Write a Python script that performs the following steps:
+
+1.  **Data Loading**: Load the TSV files for the train, test, and validation datasets using Pandas. The file paths are:
+    * Train: `/content/drive/MyDrive/FakedditDataSet/all_samples (also includes non multimodal)-20250601T164249Z-1-001/all_samples (also includes non multimodal)/all_train.tsv`
+    * Test: `/content/drive/MyDrive/FakedditDataSet/all_samples (also includes non multimodal)-20250601T164249Z-1-001/all_samples (also includes non multimodal)/all_test_public.tsv`
+    * Validation: `/content/drive/MyDrive/FakedditDataSet/all_samples (also includes non multimodal)-20250601T164249Z-1-001/all_samples (also includes non multimodal)/all_validate.tsv`
+
+2.  **Generate and Save Embeddings**: Generate embeddings for the `clean_title` and image_url column of the training dataset using the `OpenAI CLIP` model. Save these embeddings along with the `id`, `clean_title`, `title`, `2_way_label` and image_url  to a persistent ChromaDB database.
+    * First you have to download the image and then generate embedding and Save to Chroma DB
+    * ChromaDB Path: `/content/drive/MyDrive/FakedditMultiModalEmbedding`
+    * ChromaDB Collection Name: `fakeddit_train_multimodal_embeddings`
+    * The `clean_title` will be stored as the document and the `id`, `title`, `2_way_label` and image_url should be stored as metadata.
+	* You must make sure that if session is restarted, the Embeddings should continue to save from where the previous attempt left off. 
+	* Filter out rows where 'clean_title' is not a string or is NaN and there is no image_url
+	* Generate and save emebeddings to chroma DB in batches of 5000
+
+3.  **Train a Neural Network**: Train a binary classifier model using the embeddings from the `fakeddit_train_multimodal_embeddings` collection as input features and the `2_way_label` as the target.
+    * Use the TensorFlow/Keras library to build the model.
+    * Save the trained model to `/content/drive/MyDrive/FakedditMultiModalModel/model.h5`.
+	* Retrieve data in smaller batches, batch size = 5000  to avoid "too many SQL variables" error
+	* Make sure if program is rerun and model is already saved , then training does not happen again 
+
+4.  **Model Evaluation**:
+    * **Test Dataset**: Load the public test dataset, generate embeddings for the `clean_title` column, and use the saved model from `/content/drive/MyDrive/FakedditMultiModalModel/model.h5` to make predictions. Calculate and print the **Precision, Accuracy, Recall, and F1 Score**.
+    * **Validation Dataset**: Load the validation dataset, generate embeddings for the `clean_title` column, and use the saved model to make predictions. Calculate and print the **Precision, Accuracy, Recall, and F1 Score**.
+
+
+================
+Setup rclone(https://rclone.org/) on my local Windows laptop and then copied Image zip to Google Drive
+Download rclone executable 
+Then rclone config to authenticate the drive to local 
+Image URL: https://drive.usercontent.google.com/download?id=1cjY6HsHaSZuLVHywIxD5xQqng33J5S2b
+
+# Replace the file ID with the one you want to copy
+# The destination is the remote name you chose (e.g., mydrive)
+rclone backend copyid mydrive: 1cjY6HsHaSZuLVHywIxD5xQqng33J5S2b mydrive:
+
+====
+extract files in google drive 
+!tar -xvf "/content/drive/MyDrive/Fakeddit_Images/public_images.tar.bz2" -C "/content/drive/MyDrive/Fakeddit_Images/"
+/content/drive/MyDrive/Fakeddit_Images/public_image_set
+======
+
+Starting the Fakeddit Multimodal Classifier workflow...
+Drive already mounted at /content/drive; to attempt to forcibly remount, call drive.mount("/content/drive", force_remount=True).
+Google Drive mounted successfully.
+Successfully loaded data from /content/drive/MyDrive/FakedditDataSet/all_samples (also includes non multimodal)-20250601T164249Z-1-001/all_samples (also includes non multimodal)/all_train.tsv. Shape: (878218, 20)
+Filtered out 315752 records with invalid data. New shape: (562466, 20)
+Successfully loaded data from /content/drive/MyDrive/FakedditDataSet/all_samples (also includes non multimodal)-20250601T164249Z-1-001/all_samples (also includes non multimodal)/all_test_public.tsv. Shape: (92444, 20)
+Filtered out 33281 records with invalid data. New shape: (59163, 20)
+Successfully loaded data from /content/drive/MyDrive/FakedditDataSet/all_samples (also includes non multimodal)-20250601T164249Z-1-001/all_samples (also includes non multimodal)/all_validate.tsv. Shape: (92444, 20)
+Filtered out 33275 records with invalid data. New shape: (59169, 20)
+=============================
+Updated the code to extract image file each time for generating embedding . 
+That will be very slow 
+Now using terminal to extract the tar 
+637.43
+622
+614
+======
+Modify the Code to use the image file <id>.jpg in the below  path for generating embeddings /content/drive/MyDrive/Fakeddit_Images/public_image_set  
+Extracting each file every time from archive for generating embedding is not going to work as there are 500000+ image files 
+====
+
+i am getting the error
+
+Error processing local image awxhir.jpg: [Errno 5] Input/output error: '/content/drive/MyDrive/Fakeddit_Images/public_image_set/awxhir.jpg'. Using a zero vector.
+
+Error while generating or saving embeddings to ChromaDB: 'SentenceTransformer' object has no attribute 'get_image_embedding_dimension' though the file is present in location
+
+/content/drive/MyDrive/Fakeddit_Images/public_image_set/awxhir.jpg
+====
+In order to fix this error . "Error processing local image awxhir.jpg: [Errno 5] Input/output error: '/content/drive/MyDrive/Fakeddit_Images/public_image_set/awxhir.jpg'. Using a zero vector." Copy the /content/drive/MyDrive/Fakeddit_Images/public_images.tar.bz2 to /images to Colab Compute VM . Create the directory /images and copy the /content/drive/MyDrive/Fakeddit_Images/public_images.tar.bz2 to /images and extract tar.bz2 file to /images directory Modify code to fix below error Error while generating or saving embeddings to ChromaDB: 'SentenceTransformer' object has no attribute 'get_image_embedding_dimension'
+
+I will modify the code to first copy the image archive from Google Drive to the Colab VM's local storage and extract it there to avoid the Input/output error. I will also fix the AttributeError by using the correct method to get the image embedding dimension.
+
+========
+Because we have space crunch on local VM . Directly extract the tar from Google DRive /content/drive/MyDrive/Fakeddit_Images/public_images.tar.bz2 to /images/public_image_set on the local VM First mount the google DRive . Make the program to be fastest possible .
+
+I will add code to the selected cell to mount Google Drive and then directly extract the public_images.tar.bz2 file from your Drive to the /images/public_image_set directory on the local VM. This will avoid copying the large tar file first, saving space
+=======
+
+Again the same error Error while generating or saving embeddings to ChromaDB: Image size (180960000 pixels) exceeds limit of 178956970 pixels, could be decompression bomb DOS attack. Can you write code to resize all images to standard size so that embeddings can be saved to chromaDB
+
+I understand the DecompressionBombError is persisting. I will modify the code to resize the images to a standard size before generating embeddings. This should resolve the error and also help with consistent input for the embedding model.
+=====
+Update Code to use to following dataset Train Dataset: /content/drive/MyDrive/FakedditDataSet/multimodal_only_samples-20250601T164248Z-1-001/multimodal_only_samples/multimodal_train.tsv.csv Test Dataset : /content/drive/MyDrive/FakedditDataSet/multimodal_only_samples-20250601T164248Z-1-001/multimodal_only_samples/multimodal_test_public.tsv Validation Dataset: /content/drive/MyDrive/FakedditDataSet/multimodal_only_samples-20250601T164248Z-1-001/multimodal_only_samples/multimodal_validate.tsv
+
+I will update the code to use the new dataset paths you provided for the train, test, and validation data.
+
+
+====
+Below Error is coming : Error while generating or saving embeddings to ChromaDB: Image size (180960000 pixels) exceeds limit of 178956970 pixels, could be decompression bomb DOS attack. Update IMage size to a standard size which does not throw error before generating or saving embeddings.
+
+I understand the DecompressionBombError is still occurring. I will modify the code to ensure images are resized to a standard size immediately after opening them. This should prevent the error by reducing the image dimensions before they are processed further for embeddings.
+
+
+====
+Certainly! The selected code cell is responsible for mounting your Google Drive in the Colab environment and then extracting a compressed tar file (.tar.bz2) located on your Google Drive to a specified destination path, also on Google Drive.
+
+Here's a breakdown:
+
+Mount Google Drive: It first attempts to mount your Google Drive to the /content/drive directory in the Colab environment. This makes your Google Drive files accessible within the notebook.
+Define Paths: It sets variables for the path to the compressed tar file on Google Drive (TAR_FILE_PATH_DRIVE) and the destination directory where you want to extract the contents (DESTINATION_PATH_DRIVE).
+Create Destination Directory: It ensures that the destination directory on Google Drive exists. If it doesn't, it creates it.
+Extract Tar File: It uses a shell command (!tar) to extract the contents of the .tar.bz2 file.
+!tar -xf "{TAR_FILE_PATH_DRIVE}": This part invokes the tar command. -x means extract, and -f specifies the archive file. The path to your tar file on Google Drive is passed here.
+-C "{DESTINATION_PATH_DRIVE}": This option tells tar to change to the specified directory before extracting the files. This ensures the contents are extracted directly into your desired destination folder on Google Drive.
+Error Handling: It includes basic error handling to catch issues like the tar file not being found or errors during the extraction process.
+In essence, this code is a convenient way to unpack large compressed archives directly from your Google Drive within Colab using a fast, system-level command.
+Mounted at /content/drive
+Google Drive mounted successfully.
+Extracting /content/drive/MyDrive/Fakeddit_Images/public_images.tar.bz2 to /content/drive/MyDrive/FakedditDataSet/multimodal_only_samples-20250601T164248Z-1-001/multimodal_only_samples/images/public_image_set using shell command...
+Running command: tar -xf "/content/drive/MyDrive/Fakeddit_Images/public_images.tar.bz2" -C "/content/drive/MyDrive/FakedditDataSet/multimodal_only_samples-20250601T164248Z-1-001/multimodal_only_samples/images/public_image_set"
+
+=====
+# Task
+Move image files one by one from "/content/drive/MyDrive/Fakeddit_Images/public_image_set" to indexed subfolders within "/content/drive/MyDrive/Fakeddit_Images/public_image_set_index", ensuring each subfolder contains between 9000 and 15000 files by checking the destination folder file count periodically and switching to a new indexed subfolder when the count exceeds 9000.
+Move image files one by one from "/content/drive/MyDrive/Fakeddit_Images/public_image_set" to indexed subfolders within "/content/drive/MyDrive/Fakeddit_Images/public_image_set/public_image_set_<index>", ensuring each subfolder contains 9999 files Only count the number of files moved to indexed subfolder . You must not count files in the source folder as it will timeout . You have to just move file from source folder to destination folder . You will eventually come to know when all the files are moved because the source folder will become empty . Therefore there is no point in counting the files in source directory
+Okay, I understand. You want to move image files one by one from /content/drive/MyDrive/Fakeddit_Images/public_image_set into indexed subfolders (e.g., public_image_set_1, public_image_set_2, etc.) within the same parent directory /content/drive/MyDrive/Fakeddit_Images/public_image_set/, with each subfolder containing exactly 9999 files. I will generate code to do this, avoiding counting files in the source directory and instead tracking the count in the destination folders.
+
+
+===
+Copy the <id>.jpg from /content/drive/MyDrive/Fakeddit_Images/public_image_set for the first 100 records in training data set to  . Generate embeddings for those 100 records and train neural network model based on that . 
+Copy the <id>.jpg from /content/drive/MyDrive/Fakeddit_Images/public_image_set for the first 100 records in training data set to /images/ . Generate embeddings for those 100 records in /images and train neural network model based on that .
+
+Okay, I will modify the code to process only the first 100 training records, copy their images locally, generate embeddings, and train the model on this subset.
+
+
+===================
+I think IO is very slow from google drive . Therefore a files is not able to be copied from google drive location to local filesystem . Another approach is to just extract those 100 files alone from /content/drive/MyDrive/Fakeddit_Images/public_images.tar.bz2 to the /images_subset on local . You must extract specific file only
+
+You're right, direct file operations on Google Drive can be slow. I will modify the code to extract only the necessary 100 image files directly from the tar.bz2 archive to the local filesystem for faster processing.
+
+
+=====
+
+Dataset location for train , test and validate is located at /content/drive/MyDrive/FakedditDataSet/reduced_multimodal_dataset
+Train tsv file  is /content/drive/MyDrive/FakedditDataSet/reduced_multimodal_dataset/multimodal_train_reduced.tsv
+Test tsv file is /content/drive/MyDrive/FakedditDataSet/reduced_multimodal_dataset/multimodal_test_reduced.tsv
+Validate tsv file is /content/drive/MyDrive/FakedditDataSet/reduced_multimodal_dataset/multimodal_validate_reduced.tsv
+
+Image zip file to train is located at /content/drive/MyDrive/FakedditDataSet/reduced_multimodal_dataset/images.zip
+Extract the images.zip file  to /images 
+image_url column is no longer needed - drop it in the dataframe . No need to save it as a metadata in embeddings
+images.zip is extracted to /images/images
+Drop image_url column before cleaning the dataset 
+====
+This code cell implements a machine learning workflow to detect fake news using multimodal data (text and images) from the Fakeddit dataset.
+
+Here's a breakdown of what the code does:
+
+Library Installations and Imports: It starts by installing necessary libraries like chromadb (for vector database), sentence-transformers (for embeddings), pandas, Pillow (for image handling), requests, tarfile, shutil, and zipfile. It then imports these libraries.
+Image Handling Configuration: It increases the pixel limit for Pillow to handle large images and sets a standard image size for embedding.
+Google Drive Mounting: It attempts to mount Google Drive to save and load files persistently across sessions.
+Configuration: It defines file paths for the reduced TSV datasets (train, test, validate), local paths for ChromaDB and the trained model, Google Drive paths for saving these artifacts, the ChromaDB collection name, and the path to the image zip file on Google Drive.
+Data Loading (load_data function): This function loads a TSV file into a pandas DataFrame, handles potential errors by skipping bad lines, filters out rows with missing text or image URLs, and optionally limits the number of rows. It also drops the image_url column as it's not needed in the DataFrame.
+Load Datasets: It calls the load_data function to load the reduced training, test, and validation datasets.
+Extract Images from Zip: It extracts the images from the specified zip file on Google Drive to a local directory.
+Generate and Save Multimodal Embeddings to ChromaDB:
+Initializes a Sentence-Transformers CLIP model to create multimodal embeddings (combining text and image embeddings).
+Initializes a persistent ChromaDB client and gets or creates a collection to store the embeddings.
+Checks for existing documents in the collection to resume the process if it was interrupted.
+Iterates through the training data in batches.
+For each record in a batch, it attempts to load and resize the corresponding image from the local extracted directory.
+If successful, it generates text and image embeddings using the CLIP model and concatenates them to create multimodal embeddings.
+It prepares the data (IDs, documents, metadata excluding image_url, and multimodal embeddings) and adds it to the ChromaDB collection in batches.
+Train a Neural Network Model:
+Checks if a trained model already exists locally. If so, it loads the existing model.
+If no model exists locally, it retrieves all embeddings and metadata from the ChromaDB collection.
+It defines a simple sequential Keras model with dense layers for binary classification.
+The model is compiled with the Adam optimizer and binary cross-entropy loss.
+It trains the model using the retrieved embeddings and labels from ChromaDB.
+After training, it saves the model to local storage.
+Model Evaluation (evaluate_model function):
+This function takes a DataFrame (test or validation) and dataset name as input.
+It iterates through the DataFrame, loads and resizes the corresponding images from the local extracted directory, and generates multimodal embeddings.
+It uses the trained model to make predictions on the evaluation data.
+It calculates and prints common classification metrics (accuracy, precision, recall, F1 score) based on the true labels and predicted labels.
+Evaluate on Test and Validation: It calls the evaluate_model function to evaluate the trained model on the test and validation datasets.
+Save Local Artifacts to Google Drive: It copies the local ChromaDB directory and the saved model file to the specified locations on Google Drive for persistent storage.
+Workflow Complete: Prints a message indicating the workflow has finished.
+In summary, this script automates the process of loading multimodal data, generating embeddings using a CLIP model, storing these embeddings in a ChromaDB vector database, training a simple neural network classifier on the embeddings, evaluating the model, and saving the generated artifacts to Google Drive.
+===
+This code cell implements a machine learning workflow to detect fake news using multimodal data (text and images) from the Fakeddit dataset.
+
+Here's a breakdown of what the code does:
+
+Library Installations and Imports: It starts by installing necessary libraries like chromadb (for vector database), sentence-transformers (for embeddings), pandas, Pillow (for image handling), requests, tarfile, shutil, and zipfile. It then imports these libraries.
+Image Handling Configuration: It increases the pixel limit for Pillow to handle large images and sets a standard image size for embedding.
+Google Drive Mounting: It attempts to mount Google Drive to save and load files persistently across sessions.
+Configuration: It defines file paths for the reduced TSV datasets (train, test, validate), local paths for ChromaDB and the trained model, Google Drive paths for saving these artifacts, the ChromaDB collection name, and the path to the image zip file on Google Drive.
+Data Loading (load_data function): This function loads a TSV file into a pandas DataFrame, handles potential errors by skipping bad lines, filters out rows with missing text or image URLs, and optionally limits the number of rows. It also drops the image_url column as it's not needed in the DataFrame.
+Load Datasets: It calls the load_data function to load the reduced training, test, and validation datasets.
+Extract Images from Zip: It extracts the images from the specified zip file on Google Drive to a local directory.
+Generate and Save Multimodal Embeddings to ChromaDB:
+Initializes a Sentence-Transformers CLIP model to create multimodal embeddings (combining text and image embeddings).
+Initializes a persistent ChromaDB client.
+Deletes the existing ChromaDB collection to ensure a fresh start for embedding generation.
+Gets or creates the ChromaDB collection.
+Checks how many documents are already in the collection (which should be 0 after deletion).
+Gets the IDs of the documents already in the database (which should be an empty set).
+Filters out documents that are already in the database (which will be none).
+Iterates through the training data in batches.
+For each record in a batch, it attempts to load and resize the corresponding image from the local extracted directory.
+If successful, it generates text and image embeddings using the CLIP model and concatenates them to create multimodal embeddings.
+It prepares the data (IDs, documents, metadata excluding image_url, and multimodal embeddings) and adds it to the ChromaDB collection in batches.
+Train a Neural Network Model:
+Checks if a trained model already exists locally. If so, it loads the existing model.
+If no model exists locally, it retrieves all embeddings and metadata from the ChromaDB collection.
+It defines a simple sequential Keras model with dense layers for binary classification.
+The model is compiled with the Adam optimizer and binary cross-entropy loss.
+It trains the model using the retrieved embeddings and labels from ChromaDB.
+After training, it saves the model to local storage.
+Model Evaluation (evaluate_model function):
+This function takes a DataFrame (test or validation) and dataset name as input.
+It iterates through the DataFrame, loads and resizes the corresponding images from the local extracted directory, and generates multimodal embeddings.
+It uses the trained model to make predictions on the evaluation data.
+It calculates and prints common classification metrics (accuracy, precision, recall, F1 score) based on the true labels and predicted labels.
+Evaluate on Test and Validation: It calls the evaluate_model function to evaluate the trained model on the test and validation datasets.
+Save Local Artifacts to Google Drive: It copies the local ChromaDB directory and the saved model file to the specified locations on Google Drive for persistent storage.
+Workflow Complete: Prints a message indicating the workflow has finished.
+In summary, this script automates the process of loading multimodal data, generating embeddings using a CLIP model, storing these embeddings in a ChromaDB vector database, training a simple neural network classifier on the embeddings, evaluating the model, and saving the generated artifacts to Google Drive. The code has been updated to ensure a fresh generation of embeddings by deleting the existing ChromaDB collection at the start of the embedding process.
+
+Since the requested modifications have been made, you can now execute the code cell to run the workflow.
+====================================
+Observation Note:
+Some of the images are not in proper image format and can't be read
+I have removed such images and reran the program 
+=========================================
+This code performs a complete machine learning workflow for fake news detection using multimodal data (text and images) from the Fakeddit dataset.
+
+Here's a breakdown of the code:
+
+Library Installations: It starts by installing necessary libraries like chromadb, sentence-transformers, pandas, Pillow, requests, tensorflow, and transformers.
+Import Libraries: Imports all the required Python libraries for data handling, embedding generation, model building, evaluation, and file operations.
+Pillow Configuration: Increases the pixel limit for the Pillow library to handle potentially large images.
+Google Drive Mounting: Mounts Google Drive to persist data and models across Colab sessions.
+Configuration: Defines file paths for the dataset files (.tsv), local and Google Drive paths for saving ChromaDB embeddings and the trained model, the ChromaDB collection name, and the path to the image zip file. It also sets a standard image size for processing.
+Data Loading (load_data function):
+Loads data from a specified .tsv file into a pandas DataFrame.
+Includes error handling for file not found and bad lines.
+Drops the 'image_url' column if present.
+Filters out rows with missing or invalid data in key columns.
+Optionally limits the number of rows loaded.
+Load Datasets: Calls the load_data function to load the training, test, and validation datasets.
+Extract Images: Extracts images from a zip file located on Google Drive to a local directory for processing.
+Generate and Save Embeddings:
+Initializes a multimodal SentenceTransformer model (clip-ViT-L-14) to generate text and image embeddings.
+Initializes a persistent ChromaDB client to store the embeddings locally.
+Deletes the ChromaDB collection if it already exists to ensure fresh embeddings are generated.
+Processes the training data in batches to manage memory.
+For each record in a batch, it loads and resizes the corresponding image.
+Generates text and image embeddings using the multimodal model.
+Combines the text and image embeddings by concatenating them.
+Adds the generated embeddings, original text documents, and metadata (title and label) to the ChromaDB collection.
+Train Neural Network Model:
+Checks if a trained model already exists locally and loads it if it does, skipping training.
+If no local model is found, it retrieves all embeddings and corresponding labels from the ChromaDB collection.
+Defines a sequential Keras model with Dense layers and Dropout layers for regularization.
+Compiles the model with the Adam optimizer, binary cross-entropy loss, and accuracy as a metric.
+Trains the model using the retrieved embeddings and labels, with a validation split.
+Saves the trained model to the local storage path.
+Model Evaluation (evaluate_model function):
+Takes a DataFrame and dataset name as input.
+Checks if the DataFrame is empty or if the trained model is loaded.
+Generates multimodal embeddings for the evaluation dataset by loading and processing images and encoding text.
+Uses the trained model to make predictions on the generated embeddings.
+Calculates and prints evaluation metrics (precision, accuracy, recall, and F1 score) by comparing the predicted labels to the true labels.
+Evaluate on Test and Validation Sets: Calls the evaluate_model function to evaluate the trained model on the test and validation datasets.
+Save Artifacts to Google Drive:
+Copies the local ChromaDB directory to Google Drive for persistent storage. It removes the destination directory on Drive if it exists before copying.
+Copies the trained model file from local storage to Google Drive.
+Workflow Complete: Prints a message indicating the workflow is finished.
+In summary, this script automates the process of loading multimodal data, generating and storing combined text and image embeddings, training a neural network classifier on these embeddings, evaluating the model's performance, and saving the generated embeddings and the trained model to Google Drive.
+
+
+Why access to Hugging face token is needed ?
+The warning message about the Hugging Face token appears because the SentenceTransformer model (clip-ViT-L-14) being used is likely hosted on the Hugging Face Hub. Accessing resources from the Hugging Face Hub, especially for downloading model weights or using certain functionalities, can sometimes require authentication with an API token.
+
+Although you see the warning about not being authenticated, the model seems to have loaded successfully based on the subsequent output. This suggests that for this particular model and the operations being performed (encoding text and images), authentication might not be strictly necessary, or the required resources are publicly available.
+
+If you were to perform actions that require pushing models or datasets to the Hugging Face Hub, or accessing private models, you would need to authenticate by providing your Hugging Face token.
+========
+Modify Code to save embedding model in a new Local path and new Google DRive Path , save trained model in a new local path and new Google DRive path CHange embedding model to a new multimodal embedding model Change training model to more advanced model Remove Obsolete comments which are now not applicable to the code . Rewrite all the comments to explain the code in a better way .
+====
+Modify Code to save embedding model in a new Local path ver3 and new Google Drive Path ver3, save trained model in a new local path ver3 and new Google Drive path ver3. Change embedding model to a more advanced multimodal embedding model. Change training model to more advanced model. Remove Obsolete comments which are now not applicable to the code . Rewrite all the comments to explain the code in a better way .
+===
+
+Prompts
+1. Generate Workflow from the Code in collab:
+
+Explain the workflow from top to bottom including the name of embedding model used , training details such as number of epochs, details of neural network such as optimizer method, number of layers, description of layers , loss method used , value of evaluation metrics derived . Include maximum details , numeric and names of things used in the workflow.
+
+
+2. To generate editable workflow diagram that can be edited in draw.io:
+Generate an editable xml diagram which can be understood by draw.io for the below workflow:
+Paste the Workflow generated from Gemini in Collab 
+====
+
+Text Model : 
+Embedding MOdel: Sentence-Transformers model for text embeddings - 'all-MiniLM-L6-v2' 
+Neural Network Model: A sequential Keras model with 2 hidden layers ( Layer 1: 128 units, relu activation, Layer 2: 64 units , relu activation )  and output layer( 1 unit)  with sigmoid activation , adam optimizer, binary_crossentropy loss function , epochs: 10, batch size: 32 
+Accuracy: 0.8336
+Precision: 0.8358
+Recall: 0.8288
+F1 Score: 0.8323
+
+Multimodal Model 1: 
+
+Embedding Model: Sentence-Transformers model for multimodal embeddings (text + image). clip-ViT-B-32 model
+Neural Network Model: A sequential Keras model with 2 hidden layers ( Layer 1: 128 units, relu activation, Layer 2: 64 units , relu activation)  and output layer( 1 unit)  with sigmoid activation , adam optimizer, binary_crossentropy loss function , epochs: 20, batch size: 32
+Accuracy: 0.8716
+Precision: 0.8720
+Recall: 0.7963
+F1 Score: 0.8325
+
+Multimodal Model 2: 
+
+Embedding Model: clip-ViT-L-14 Sentence-Transformers model 
+Neural Network Model: A sequential Keras model with 3 hidden layers , 2 dropout layers and 1 output layer 
+A dense layer with 256 neurons and ReLU activation.
+A Dropout layer with a rate of 0.5.
+A dense layer with 128 neurons and ReLU activation.
+A Dropout layer with a rate of 0.5.
+A dense layer with 64 neurons and ReLU activation.
+An output layer with 1 neuron and a sigmoid activation function for binary classification.
+The model is compiled using the adam optimizer and binary_crossentropy loss function, It is trained for 30 epochs with a batch size of 64.
+Accuracy: 0.91
+Precision: 0.89
+Recall: 0.89
+F1 Score: 0.89
+
+Multimodal Model 3: 
+
+Embedding Model:  SentenceTransformer model: clip-ViT-L-14
+Neural Network Model: A sequential Keras model with 4 hidden layers , 3 dropout layers and 1 output layer 
+Input Dense layer: Dense with 512 units, relu activation, input_dim equal to the embedding size.
+Dropout layer: Dropout with a rate of 0.6.
+Dense layer: Dense with 256 units, relu activation.
+Dropout layer: Dropout with a rate of 0.6.
+Dense layer: Dense with 128 units, relu activation.
+Dropout layer: Dropout with a rate of 0.5.
+Dense layer: Dense with 64 units, relu activation.
+Output layer: Dense with 1 unit, sigmoid activation (for binary classification).
+Compile the model with optimizer='adam', loss='binary_crossentropy', and metrics=['accuracy'].
+Train the model for 50 epochs with a batch_size of 128 
+Accuracy: 0.91
+Precision: 0.88
+Recall: 0.90
+F1 Score: 0.89
