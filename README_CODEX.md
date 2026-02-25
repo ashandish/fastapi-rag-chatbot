@@ -12,6 +12,21 @@ Quick guide to work on this project with Codex (CLI assistant) from a WSL enviro
 - Build and run locally via Docker: `docker compose up --build` (or `-d` to detach).
 - Check status: `git status -sb`.
 
+## Local LLM Checklist (on-prem mode)
+- Ensure `.env` uses local mode:
+  - `LLM_PROVIDER=local`
+  - `LOCAL_LLM_ENDPOINT=http://host.docker.internal:11434/v1` (when app runs in Docker and LLM runs on host)
+- Start local LLM server before testing chat:
+  ```bash
+  ollama serve
+  ollama pull llama3:8b-instruct-q4_0
+  curl http://localhost:11434/v1/models
+  ```
+- If chat shows `Connection refused`, rebuild/restart app and worker:
+  ```bash
+  docker compose up -d --build app worker
+  ```
+
 ## Pushing Changes
 - Codex sandbox blocks outbound network, so `git push` from inside Codex will fail.
 - After committing in Codex, open a regular git client/terminal with network access and run `git push origin main`.

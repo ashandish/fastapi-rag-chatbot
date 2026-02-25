@@ -82,5 +82,13 @@ def answer_question(q: str) -> str:
             "to add documents and generate embeddings."
         )
     initial = similarity_search(q, top_k=settings.top_k_initial)
+    if not initial:
+        return (
+            "No indexed context is available yet. Please add documents in /embeddings and run generation."
+        )
     final = rerank(q, initial, settings.top_k_reranked) if settings.rerank_enabled else initial[:settings.top_k_reranked]
+    if not final:
+        return (
+            "No relevant context found in the index. Add more documents in /embeddings and try again."
+        )
     return synthesize_answer(q, final)

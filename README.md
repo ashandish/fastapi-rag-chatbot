@@ -107,6 +107,32 @@ docker compose up --build
 ```
 Services: `app` (FastAPI), `worker` (Celery), `redis` (broker/storage). Port 8000 on the host maps to the app container; the shared `./data` volume keeps embeddings between runs.
 
+## Local LLM server prerequisite (for `LLM_PROVIDER=local`)
+- Your local LLM server must be running before querying chat.
+- Example with Ollama on the host:
+  ```bash
+  ollama serve
+  ollama pull llama3:8b-instruct-q4_0
+  curl http://localhost:11434/v1/models
+  ```
+- If app/worker run in Docker and LLM runs on host, set:
+  - `LOCAL_LLM_ENDPOINT=http://host.docker.internal:11434/v1`
+- Linux VM note: this repo's Compose file maps `host.docker.internal` via `host-gateway` for `app` and `worker`.
+
+## Troubleshooting: `LLM request failed: [Errno 111] Connection refused`
+1. Confirm local LLM server is up on host:
+   ```bash
+   curl http://localhost:11434/v1/models
+   ```
+2. Confirm `.env` values:
+   - `LLM_PROVIDER=local`
+   - `LOCAL_LLM_ENDPOINT=http://host.docker.internal:11434/v1` (Docker-to-host case)
+3. Restart services after env changes:
+   ```bash
+   docker compose up -d --build app worker
+   ```
+4. If you query before building embeddings, app returns a retrieval warning instead of calling LLM. Generate embeddings in `/embeddings` first for useful QA.
+
 Visit:
 - Chat: http://localhost:8000/chat
 - Admin login: http://localhost:8000/admin/login

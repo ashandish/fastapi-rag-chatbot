@@ -3,6 +3,8 @@ services:
   app:
     build: .
     env_file: .env
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     ports:
       - "8000:8000"
     depends_on:
@@ -15,6 +17,8 @@ services:
     build: .
     command: celery -A app.celery_app.celery worker --loglevel=INFO --concurrency=2
     env_file: .env
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       - redis
     volumes:
