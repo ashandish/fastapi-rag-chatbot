@@ -4,6 +4,7 @@ import chromadb
 from chromadb.config import Settings as ChromaSettings
 from sentence_transformers import SentenceTransformer
 from PIL import Image
+import pytesseract
 
 from .models import settings, UPLOAD_DIR
 from .utils import read_text_file, read_pdf, read_docx, is_text_file, is_image_file, chunk_text_by_tokens
@@ -60,7 +61,6 @@ def reset_collection():
 
 def add_documents(files: List[str]) -> Dict[str, Any]:
     text_embedder = get_text_embedder()
-    image_embedder = get_image_embedder()
     max_tokens = int(settings.chunk_size_tokens)
     overlap = 0.2
 
@@ -86,12 +86,23 @@ def add_documents(files: List[str]) -> Dict[str, Any]:
                 ids.append(str(uuid.uuid4()))
 
         elif is_image_file(fpath):
-            docs.append(f"[IMAGE]{os.path.basename(fpath)}")
-            metadatas.append({**base_meta, "type": "image"})
-            ids.append(str(uuid.uuid4()))
+            # OCR image text, then index with the same text embedding model
+            # used for documents so query/search vectors remain compatible.
+            with Image.open(fpath) as img:
+                ocr_text = pytesseract.image_to_string(img.convert("RGB")).strip()
+
+            if ocr_text:
+                chunks = chunk_text_by_tokens(ocr_text, max_tokens, overlap_ratio=overlap)
+                for i, chunk in enumerate(chunks):
+                    docs.append(chunk)
+                    metadatas.append({**base_meta, "type": "text", "from_image_ocr": True, "chunk_index": i})
+                    ids.append(str(uuid.uuid4()))
+            else:
+                docs.append(f"[IMAGE_NO_TEXT]{os.path.basename(fpath)}")
+                metadatas.append({**base_meta, "type": "text", "from_image_ocr": True, "ocr_empty": True})
+                ids.append(str(uuid.uuid4()))
 
     text_indices = [i for i, m in enumerate(metadatas) if m["type"] == "text"]
-    img_indices = [i for i, m in enumerate(metadatas) if m["type"] == "image"]
     embs = [None] * len(docs)
 
     if text_indices:
@@ -103,19 +114,6 @@ def add_documents(files: List[str]) -> Dict[str, Any]:
             show_progress_bar=False
         )
         for idx, vec in zip(text_indices, text_embs):
-            embs[idx] = vec
-
-    if img_indices:
-        imgs = [Image.open(metadatas[i]["path"]).convert("RGB") for i in img_indices]
-        img_embs = image_embedder.encode(
-            imgs,
-            normalize_embeddings=True,
-            convert_to_numpy=True,
-            show_progress_bar=False
-        )
-        for img in imgs:
-            img.close()
-        for idx, vec in zip(img_indices, img_embs):
             embs[idx] = vec
 
     if not ids:

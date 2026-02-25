@@ -14,6 +14,7 @@ chardet==5.2.0
 sentence-transformers==3.1.1
 torch==2.4.1
 pillow==10.4.0
+pytesseract==0.3.10
 chromadb==0.5.5
 tiktoken==0.7.0
 numpy==1.26.4

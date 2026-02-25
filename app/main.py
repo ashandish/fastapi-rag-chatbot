@@ -6,7 +6,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from .models import settings, UPLOAD_DIR
-from .embeddings import save_upload, get_text_embedder, get_image_embedder
+from .embeddings import save_upload, get_text_embedder
 from .retrieval import answer_question, get_reranker
 from .auth import configure_oauth, oauth
 from .admin_auth import (
@@ -33,7 +33,6 @@ app = FastAPI(title="RAG Chatbot v11 — Multi-Auth")
 async def warm_up_models():
     try:
         get_text_embedder()
-        get_image_embedder()
         if settings.rerank_enabled:
             get_reranker()
     except Exception as exc:
