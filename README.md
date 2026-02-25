@@ -17,7 +17,7 @@ Production-grade retrieval-augmented chatbot with admin-managed embeddings, prog
 
 ### LLM provider options (cloud vs on‑prem)
 - `LLM_PROVIDER=openai` (default) uses OpenAI Chat Completions with `LLM_MODEL_OPENAI` (default `gpt-4o-mini`).
-- `LLM_PROVIDER=local` uses an OpenAI-compatible local endpoint (e.g., Ollama or llama.cpp server) at `LOCAL_LLM_ENDPOINT` (default `http://localhost:11434/v1`; use `http://host.docker.internal:11434/v1` when the LLM runs on host and app runs in Docker).
+- `LLM_PROVIDER=local` uses an OpenAI-compatible local endpoint at `LOCAL_LLM_ENDPOINT` (default `http://ollama:11434/v1` with the bundled Compose Ollama service; use `http://host.docker.internal:11434/v1` when the LLM runs on host and app runs in Docker).
   - Pick model size with `LOCAL_LLM_SIZE=small|large`.
     - `small` → `LOCAL_LLM_MODEL_SMALL` (default `llama3:8b-instruct-q4_0`).
     - `large` → `LOCAL_LLM_MODEL_LARGE` (default `llama3:70b-instruct`).
@@ -32,9 +32,10 @@ LLM_PROVIDER=openai                 # or local
 LLM_MODEL_OPENAI=gpt-4o-mini
 OPENAI_API_KEY=
 
-# Local LLM (OpenAI-compatible, e.g., Ollama/llama.cpp server)
+# Local LLM (OpenAI-compatible)
+# Default points to bundled docker-compose Ollama service.
 # If app runs in Docker and LLM runs on host, use http://host.docker.internal:11434/v1
-LOCAL_LLM_ENDPOINT=http://localhost:11434/v1
+LOCAL_LLM_ENDPOINT=http://ollama:11434/v1
 LOCAL_LLM_SIZE=small               # small (Llama 3 8B Q4) or large (Llama 3 70B)
 LOCAL_LLM_MODEL_SMALL=llama3:8b-instruct-q4_0
 LOCAL_LLM_MODEL_LARGE=llama3:70b-instruct
@@ -105,31 +106,29 @@ SAML_ALLOWED_EMAILS=
 ```bash
 docker compose up --build
 ```
-Services: `app` (FastAPI), `worker` (Celery), `redis` (broker/storage). Port 8000 on the host maps to the app container; the shared `./data` volume keeps embeddings between runs.
+Services: `app` (FastAPI), `worker` (Celery), `redis` (broker/storage), `ollama` (local Llama server), `ollama-init` (pulls model). Port 8000 maps to app, 11434 maps to Ollama; shared `./data` volume keeps embeddings and local model cache between runs.
 
-## Local LLM server prerequisite (for `LLM_PROVIDER=local`)
-- Your local LLM server must be running before querying chat.
-- Example with Ollama on the host:
+## Local LLM server setup (included in this repo)
+- No separate host process is required: `docker compose up --build` starts Ollama automatically.
+- `ollama-init` pulls `LOCAL_LLM_MODEL_SMALL` on first run.
+- Verify local LLM is available:
   ```bash
-  ollama serve
-  ollama pull llama3:8b-instruct-q4_0
   curl http://localhost:11434/v1/models
   ```
-- If app/worker run in Docker and LLM runs on host, set:
+- If you prefer external host Ollama instead of bundled service, set:
   - `LOCAL_LLM_ENDPOINT=http://host.docker.internal:11434/v1`
-- Linux VM note: this repo's Compose file maps `host.docker.internal` via `host-gateway` for `app` and `worker`.
 
 ## Troubleshooting: `LLM request failed: [Errno 111] Connection refused`
-1. Confirm local LLM server is up on host:
+1. Confirm local LLM server is up:
    ```bash
    curl http://localhost:11434/v1/models
    ```
 2. Confirm `.env` values:
    - `LLM_PROVIDER=local`
-   - `LOCAL_LLM_ENDPOINT=http://host.docker.internal:11434/v1` (Docker-to-host case)
+   - `LOCAL_LLM_ENDPOINT=http://ollama:11434/v1` (bundled Compose Ollama)
 3. Restart services after env changes:
    ```bash
-   docker compose up -d --build app worker
+   docker compose up -d --build
    ```
 4. If you query before building embeddings, app returns a retrieval warning instead of calling LLM. Generate embeddings in `/embeddings` first for useful QA.
 

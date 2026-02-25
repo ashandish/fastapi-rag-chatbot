@@ -3,12 +3,15 @@ services:
   app:
     build: .
     env_file: .env
+    environment:
+      LOCAL_LLM_ENDPOINT: ${LOCAL_LLM_ENDPOINT:-http://ollama:11434/v1}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     ports:
       - "8000:8000"
     depends_on:
       - redis
+      - ollama
     volumes:
       - ./data:/data
     restart: unless-stopped
@@ -17,10 +20,13 @@ services:
     build: .
     command: celery -A app.celery_app.celery worker --loglevel=INFO --concurrency=2
     env_file: .env
+    environment:
+      LOCAL_LLM_ENDPOINT: ${LOCAL_LLM_ENDPOINT:-http://ollama:11434/v1}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:
       - redis
+      - ollama
     volumes:
       - ./data:/data
     restart: unless-stopped
@@ -30,3 +36,23 @@ services:
     ports:
       - "6379:6379"
     restart: unless-stopped
+
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ./data/ollama:/root/.ollama
+    restart: unless-stopped
+
+  ollama-init:
+    image: ollama/ollama:latest
+    depends_on:
+      - ollama
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+      OLLAMA_MODEL: ${LOCAL_LLM_MODEL_SMALL:-llama3:8b-instruct-q4_0}
+    command: >
+      sh -c "until ollama list >/dev/null 2>&1; do sleep 2; done;
+      ollama pull \"$${OLLAMA_MODEL}\""
+    restart: "no"

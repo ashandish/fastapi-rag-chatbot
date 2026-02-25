@@ -15,16 +15,15 @@ Quick guide to work on this project with Codex (CLI assistant) from a WSL enviro
 ## Local LLM Checklist (on-prem mode)
 - Ensure `.env` uses local mode:
   - `LLM_PROVIDER=local`
-  - `LOCAL_LLM_ENDPOINT=http://host.docker.internal:11434/v1` (when app runs in Docker and LLM runs on host)
-- Start local LLM server before testing chat:
+  - `LOCAL_LLM_ENDPOINT=http://ollama:11434/v1` (bundled docker-compose Ollama service)
+- Start full stack (includes Ollama server + model init):
   ```bash
-  ollama serve
-  ollama pull llama3:8b-instruct-q4_0
+  docker compose up -d --build
   curl http://localhost:11434/v1/models
   ```
 - If chat shows `Connection refused`, rebuild/restart app and worker:
   ```bash
-  docker compose up -d --build app worker
+  docker compose up -d --build
   ```
 
 ## Pushing Changes
