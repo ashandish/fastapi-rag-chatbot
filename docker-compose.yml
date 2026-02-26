@@ -1,4 +1,3 @@
-version: "3.9"
 services:
   app:
     image: fastapi-rag-chatbot:latest
