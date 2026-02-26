@@ -1,6 +1,7 @@
 version: "3.9"
 services:
   app:
+    image: fastapi-rag-chatbot:latest
     build: .
     env_file: .env
     environment:
@@ -17,7 +18,7 @@ services:
     restart: unless-stopped
 
   worker:
-    build: .
+    image: fastapi-rag-chatbot:latest
     command: celery -A app.celery_app.celery worker --loglevel=INFO --concurrency=2
     env_file: .env
     environment:
