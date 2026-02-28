@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rag-chatbot-config
+  namespace: rag-chatbot
+data:
+  LLM_PROVIDER: "local"
+  LOCAL_LLM_ENDPOINT: "http://ollama:11434/v1"
+  LOCAL_LLM_SIZE: "small"
+  LOCAL_LLM_MODEL_SMALL: "llama3:8b-instruct-q4_0"
+  EMBED_STORE_PATH: "/data/chroma_store"
+  EMBED_MODE: "cpu"
+  TEXT_EMBED_MODEL_CPU: "all-MiniLM-L6-v2"
+  IMAGE_EMBED_MODEL_CPU: "clip-ViT-B-32"
+  CHUNK_SIZE_TOKENS: "1024"
+  TOP_K_INITIAL: "50"
+  TOP_K_RERANKED: "5"
+  RERANK_ENABLED: "true"
+  MAX_FILE_SIZE_MB: "10"
+  MAX_TOTAL_DOC_SIZE_MB: "1024"
+  ADMIN_USERNAME: "admin"
+  AUTH_GOOGLE_ENABLED: "false"
+  AUTH_AZURE_AD_ENABLED: "false"
+  AUTH_OKTA_ENABLED: "false"
+  AUTH_AUTH0_ENABLED: "false"
+  AUTH_SAML_ENABLED: "false"

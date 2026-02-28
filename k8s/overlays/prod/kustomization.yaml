@@ -1,0 +1,50 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../../base
+  - rollout-app.yaml
+  - secret.yaml
+images:
+  - name: ghcr.io/your-org/fastapi-rag-chatbot
+    newTag: prod-latest
+patches:
+  - target:
+      kind: Deployment
+      name: rag-chatbot-app
+    patch: |-
+      $patch: delete
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: rag-chatbot-app
+  - target:
+      kind: Service
+      name: rag-chatbot-app
+    patch: |-
+      $patch: delete
+      apiVersion: v1
+      kind: Service
+      metadata:
+        name: rag-chatbot-app
+  - target:
+      kind: HorizontalPodAutoscaler
+      name: rag-chatbot-app
+    patch: |-
+      $patch: delete
+      apiVersion: autoscaling/v2
+      kind: HorizontalPodAutoscaler
+      metadata:
+        name: rag-chatbot-app
+  - target:
+      kind: Ingress
+      name: rag-chatbot
+    patch: |-
+      - op: replace
+        path: /spec/rules/0/host
+        value: rag.example.com
+      - op: replace
+        path: /spec/tls/0/hosts/0
+        value: rag.example.com
+      - op: replace
+        path: /spec/rules/0/http/paths/0/backend/service/name
+        value: rag-chatbot-app-active

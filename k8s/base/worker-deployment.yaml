@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rag-chatbot-worker
+  namespace: rag-chatbot
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rag-chatbot-worker
+  template:
+    metadata:
+      labels:
+        app: rag-chatbot-worker
+    spec:
+      containers:
+        - name: worker
+          image: ghcr.io/your-org/fastapi-rag-chatbot:replace-with-tag
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/sh", "-lc"]
+          args:
+            - |
+              mkdir -p /data/system_logs/worker &&
+              celery -A app.celery_app.celery worker --loglevel=INFO --concurrency=2 \
+              2>&1 | tee -a /data/system_logs/worker/runtime.log
+          envFrom:
+            - configMapRef:
+                name: rag-chatbot-config
+            - secretRef:
+                name: rag-chatbot-secrets
+          volumeMounts:
+            - name: app-data
+              mountPath: /data
+          resources:
+            requests:
+              cpu: 300m
+              memory: 512Mi
+            limits:
+              cpu: "2"
+              memory: 2Gi
+      volumes:
+        - name: app-data
+          persistentVolumeClaim:
+            claimName: rag-chatbot-data

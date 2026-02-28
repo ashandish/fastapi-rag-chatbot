@@ -183,3 +183,10 @@ Visit:
 - `app/tasks.py` — Celery task to build/reset the vector store with Redis-backed progress reporting.
 - `app/celery_app.py` — Celery instance configured for Redis broker/backend.
 - `app/templates/*` and `app/static/*` — Jinja2 views and static assets for chat/admin/embeddings pages.
+
+## Kubernetes starter deployment
+A starter production-oriented Kubernetes setup is included in `k8s/`:
+- Rolling updates (staging): `k8s/overlays/staging`
+- Blue/green with Argo Rollouts (prod): `k8s/overlays/prod`
+
+See `k8s/README.md` for prerequisites, deploy commands, and promotion/rollback flow.

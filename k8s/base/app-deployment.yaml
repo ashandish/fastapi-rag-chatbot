@@ -1,0 +1,77 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rag-chatbot-app
+  namespace: rag-chatbot
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app: rag-chatbot-app
+  template:
+    metadata:
+      labels:
+        app: rag-chatbot-app
+    spec:
+      containers:
+        - name: app
+          image: ghcr.io/your-org/fastapi-rag-chatbot:replace-with-tag
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/sh", "-lc"]
+          args:
+            - |
+              mkdir -p /data/system_logs/app &&
+              gunicorn -k uvicorn.workers.UvicornWorker app.main:app \
+              --bind 0.0.0.0:8000 --workers 2 --timeout 120 \
+              2>&1 | tee -a /data/system_logs/app/runtime.log
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: rag-chatbot-config
+            - secretRef:
+                name: rag-chatbot-secrets
+          volumeMounts:
+            - name: app-data
+              mountPath: /data
+          resources:
+            requests:
+              cpu: 500m
+              memory: 1Gi
+            limits:
+              cpu: "2"
+              memory: 4Gi
+          readinessProbe:
+            httpGet:
+              path: /admin/login
+              port: 8000
+            initialDelaySeconds: 20
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /admin/login
+              port: 8000
+            initialDelaySeconds: 60
+            periodSeconds: 10
+      volumes:
+        - name: app-data
+          persistentVolumeClaim:
+            claimName: rag-chatbot-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rag-chatbot-app
+  namespace: rag-chatbot
+spec:
+  selector:
+    app: rag-chatbot-app
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8000
