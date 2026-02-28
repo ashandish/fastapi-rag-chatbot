@@ -11,6 +11,9 @@ Quick guide to work on this project with Codex (CLI assistant) from a WSL enviro
 - Edit and inspect files with Codex commands (search, apply_patch, etc.).
 - Build and run locally via Docker: `docker compose up --build` (or `-d` to detach).
 - Check status: `git status -sb`.
+- Run clean-state smoke checks when touching admin/auth/retrieval bootstrap behavior:
+  - `./scripts/test_fresh_start.sh`
+  - `./scripts/test_persistence.sh`
 
 ## Local LLM Checklist (on-prem mode)
 - Ensure `.env` uses local mode:
@@ -20,6 +23,10 @@ Quick guide to work on this project with Codex (CLI assistant) from a WSL enviro
   ```bash
   docker compose up -d --build
   curl http://localhost:11434/v1/models
+  ```
+- If chat shows `404 Not Found` with `model ... not found`, pull the model:
+  ```bash
+  docker compose exec ollama ollama pull llama3:8b-instruct-q4_0
   ```
 - If chat shows `Connection refused`, rebuild/restart app and worker:
   ```bash

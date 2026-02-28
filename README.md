@@ -13,6 +13,7 @@ Production-grade retrieval-augmented chatbot with admin-managed embeddings, prog
 ## How the app works
 - Admin + embeddings: `/admin/login` guards `/embeddings`. Uploads are validated (per-file and total size), stored in `/data/uploads`, then a Celery job (`process_embeddings`) chunks text, OCRs image text, embeds all indexed content with the text embedding model, and writes vectors to Chroma. Redis DB 2 stores progress so the embeddings page can render a progress bar and status updates.
 - Chat flow: `/chat` opens a WebSocket to `/ws/chat`. Messages trigger `answer_question`: fetch candidates from Chroma, optionally rerank, and send top context to OpenAI. Responses stream back to the browser. If no collection exists, the bot instructs the user to log in and build embeddings.
+- Retrieval readiness signal: Home (`/`), Chat (`/chat`), and Embeddings (`/embeddings`) pages show an embeddings status banner so users can see whether retrieval data is built before asking questions.
 - Startup: `app/main.py` warms up text-embedding and rerank models on startup to avoid first-request latency and registers any enabled OAuth/SAML providers.
 
 ### LLM provider options (cloud vs on‑prem)
@@ -108,6 +109,16 @@ docker compose up --build
 ```
 Services: `app` (FastAPI), `worker` (Celery), `redis` (broker/storage), `ollama` (local Llama server), `ollama-init` (pulls model). Port 8000 maps to app, 11434 maps to Ollama; shared `./data` volume keeps embeddings and local model cache between runs.
 
+## Repeatable smoke tests
+Run from repo root:
+```bash
+./scripts/test_fresh_start.sh
+./scripts/test_persistence.sh
+```
+- `test_fresh_start.sh`: wipes volumes, starts stack, initializes Ollama model, and validates bootstrap admin login behavior.
+- `test_persistence.sh`: wipes volumes, initializes model, changes admin password, and validates password persistence across restart.
+- Both scripts run `docker compose down -v` and intentionally clear persisted `./data`.
+
 ## Local LLM server setup (included in this repo)
 - No separate host process is required: `docker compose up --build` starts Ollama automatically.
 - `ollama-init` pulls `LOCAL_LLM_MODEL_SMALL` on first run.
@@ -131,6 +142,21 @@ Services: `app` (FastAPI), `worker` (Celery), `redis` (broker/storage), `ollama`
    docker compose up -d --build
    ```
 4. If you query before building embeddings, app returns a retrieval warning instead of calling LLM. Generate embeddings in `/embeddings` first for useful QA.
+
+## Troubleshooting: `LLM request failed ... 404 Not Found`
+- In local mode, this usually means the configured local model is missing (not an endpoint mismatch).
+- Check models:
+  ```bash
+  curl http://localhost:11434/api/tags
+  ```
+- Pull the configured model manually:
+  ```bash
+  docker compose exec ollama ollama pull llama3:8b-instruct-q4_0
+  ```
+- Or rerun startup including init:
+  ```bash
+  docker compose up -d --build
+  ```
 
 Visit:
 - Chat: http://localhost:8000/chat

@@ -10,8 +10,12 @@ services:
     ports:
       - "8000:8000"
     depends_on:
-      - redis
-      - ollama
+      redis:
+        condition: service_started
+      ollama:
+        condition: service_started
+      ollama-init:
+        condition: service_completed_successfully
     volumes:
       - ./data:/data
     restart: unless-stopped
@@ -26,8 +30,12 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:
-      - redis
-      - ollama
+      redis:
+        condition: service_started
+      ollama:
+        condition: service_started
+      ollama-init:
+        condition: service_completed_successfully
     volumes:
       - ./data:/data
     restart: unless-stopped

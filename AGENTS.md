@@ -5,6 +5,7 @@
 - Frontend assets: `app/templates/` (Jinja2 views) and `app/static/` (JS/CSS/assets).
 - Infrastructure: `Dockerfile`, `docker-compose.yml`, environment config via `.env`, data volume at `./data` (Chroma store, uploads, admin hash).
 - Dependencies: `requirements.txt`; entrypoint served by Gunicorn/Uvicorn.
+- Retrieval readiness is surfaced in UI banners on `/`, `/chat`, and `/embeddings` from the index status context in `app/main.py`.
 
 ## Build, Test, and Development Commands
 - Run locally with Docker Compose (recommended):
