@@ -18,12 +18,19 @@ services:
         condition: service_completed_successfully
     volumes:
       - ./data:/data
+    command: >
+      /bin/sh -lc "mkdir -p /data/system_logs/app &&
+      gunicorn -k uvicorn.workers.UvicornWorker app.main:app --bind 0.0.0.0:8000 --workers 2 --timeout 120
+      2>&1 | tee -a /data/system_logs/app/runtime.log"
     restart: unless-stopped
 
   worker:
     image: fastapi-rag-chatbot:latest
     build: .
-    command: celery -A app.celery_app.celery worker --loglevel=INFO --concurrency=2
+    command: >
+      /bin/sh -lc "mkdir -p /data/system_logs/worker &&
+      celery -A app.celery_app.celery worker --loglevel=INFO --concurrency=2
+      2>&1 | tee -a /data/system_logs/worker/runtime.log"
     env_file: .env
     environment:
       LOCAL_LLM_ENDPOINT: ${LOCAL_LLM_ENDPOINT:-http://ollama:11434/v1}
@@ -42,12 +49,20 @@ services:
 
   redis:
     image: redis:7-alpine
+    command: >
+      /bin/sh -lc "mkdir -p /logs &&
+      redis-server 2>&1 | tee -a /logs/runtime.log"
     ports:
       - "6379:6379"
+    volumes:
+      - ./data/system_logs/redis:/logs
     restart: unless-stopped
 
   ollama:
     image: ollama/ollama:latest
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - 'mkdir -p /root/.ollama/logs && ollama serve 2>&1 | tee -a /root/.ollama/logs/runtime.log'
     ports:
       - "11434:11434"
     volumes:
@@ -61,7 +76,9 @@ services:
     environment:
       OLLAMA_HOST: http://ollama:11434
       OLLAMA_MODEL: ${LOCAL_LLM_MODEL_SMALL:-llama3:8b-instruct-q4_0}
+    volumes:
+      - ./data/system_logs/ollama-init:/logs
     entrypoint: ["/bin/sh", "-c"]
     command:
-      - 'until ollama list >/dev/null 2>&1; do sleep 2; done; ollama pull "$${OLLAMA_MODEL}"'
+      - 'mkdir -p /logs; until ollama list >/dev/null 2>&1; do sleep 2; done; ollama pull "$${OLLAMA_MODEL}" 2>&1 | tee -a /logs/runtime.log'
     restart: "no"

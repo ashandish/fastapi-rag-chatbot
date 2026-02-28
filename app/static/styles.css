@@ -81,7 +81,9 @@ a { color: var(--accent); text-decoration: none; }
 }
 input[type="file"],
 input[type='text'],
-input[type='password'] {
+input[type='password'],
+input[type='number'],
+select {
   padding: 10px;
   border-radius:8px;
   border:1px solid rgba(255,255,255,0.12);
@@ -152,4 +154,63 @@ button:hover { opacity:0.9; }
   margin-top:6px;
   font-size: 12px;
   color: var(--muted);
+}
+.log-box {
+  margin-top: 12px;
+  background: rgba(0,0,0,0.35);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 10px;
+  padding: 12px;
+  max-height: 70vh;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 12px;
+}
+.logs-toolbar {
+  display: flex;
+  gap: 12px;
+  align-items: end;
+  flex-wrap: wrap;
+}
+.logs-grid {
+  margin-top: 14px;
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 12px;
+}
+.logs-side {
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 10px;
+  padding: 10px;
+  background: rgba(0,0,0,0.18);
+  max-height: 70vh;
+  overflow: auto;
+}
+.logs-main {
+  min-width: 0;
+}
+.file-list {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+}
+.file-list li + li {
+  margin-top: 6px;
+}
+.file-link {
+  width: 100%;
+  text-align: left;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(0,0,0,0.2);
+}
+.file-link.active {
+  border-color: rgba(59,130,246,0.8);
+  background: rgba(59,130,246,0.2);
+}
+@media (max-width: 900px) {
+  .logs-grid {
+    grid-template-columns: 1fr;
+  }
 }

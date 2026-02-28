@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>System Logs</title>
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+<header class="header">
+  <h1>System Logs</h1>
+  <nav>
+    <a href="/">Home</a>
+    <a href="/chat">Chat</a>
+    <a href="/embeddings">Generate Embeddings</a>
+    <a href="/admin/change-password">Change Password</a>
+    <a href="/admin/logout">Admin Logout</a>
+  </nav>
+</header>
+<main class="container">
+  <section class="card">
+    <div class="logs-toolbar">
+      <label>
+        Component
+        <select id="component-select">
+          {% for component in components %}
+            <option value="{{ component }}" {% if selected_component == component %}selected{% endif %}>{{ component }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>
+        Tail lines
+        <input id="lines-input" type="number" min="50" max="5000" value="300" />
+      </label>
+      <button id="refresh-btn" type="button">Refresh</button>
+    </div>
+    <div class="logs-grid">
+      <aside class="logs-side">
+        <div class="notice">Log files</div>
+        <ul id="file-list" class="file-list"></ul>
+      </aside>
+      <div class="logs-main">
+        <div id="log-meta" class="notice"></div>
+        <pre id="log-content" class="log-box">Select a component and log file.</pre>
+      </div>
+    </div>
+  </section>
+</main>
+<script>
+  (function () {
+    const componentSelect = document.getElementById('component-select');
+    const linesInput = document.getElementById('lines-input');
+    const refreshBtn = document.getElementById('refresh-btn');
+    const fileList = document.getElementById('file-list');
+    const logContent = document.getElementById('log-content');
+    const logMeta = document.getElementById('log-meta');
+    const initialComponent = {{ selected_component|tojson }};
+    const initialFile = {{ selected_file|tojson }};
+    let currentComponent = initialComponent || componentSelect.value || '';
+    let currentFile = initialFile || '';
+    let pollHandle = null;
+
+    function setError(message) {
+      logMeta.textContent = message;
+      logContent.textContent = '';
+    }
+
+    async function fetchJson(url) {
+      const res = await fetch(url, { credentials: 'same-origin' });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || ('HTTP ' + res.status));
+      }
+      return data;
+    }
+
+    async function loadFiles(component, preferredFile) {
+      if (!component) {
+        fileList.innerHTML = '';
+        currentFile = '';
+        return;
+      }
+      try {
+        const data = await fetchJson('/admin/system-logs/api/files?component=' + encodeURIComponent(component));
+        const files = data.files || [];
+        fileList.innerHTML = '';
+        if (!files.length) {
+          currentFile = '';
+          setError('No log files found for component "' + component + '".');
+          return;
+        }
+        currentFile = files.includes(preferredFile) ? preferredFile : files[0];
+        files.forEach((name) => {
+          const li = document.createElement('li');
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'file-link' + (name === currentFile ? ' active' : '');
+          btn.textContent = name;
+          btn.addEventListener('click', () => {
+            currentFile = name;
+            Array.from(fileList.querySelectorAll('.file-link')).forEach((el) => el.classList.remove('active'));
+            btn.classList.add('active');
+            loadTail();
+          });
+          li.appendChild(btn);
+          fileList.appendChild(li);
+        });
+      } catch (err) {
+        setError('Failed to load file list: ' + err.message);
+      }
+    }
+
+    async function loadTail() {
+      if (!currentComponent || !currentFile) {
+        setError('Select a component and log file.');
+        return;
+      }
+      const lines = Math.min(5000, Math.max(50, parseInt(linesInput.value || '300', 10)));
+      linesInput.value = String(lines);
+      const url =
+        '/admin/system-logs/api/tail?component=' + encodeURIComponent(currentComponent) +
+        '&log_file=' + encodeURIComponent(currentFile) +
+        '&lines=' + encodeURIComponent(lines);
+      try {
+        const data = await fetchJson(url);
+        logContent.textContent = data.content || '';
+        logMeta.textContent = currentComponent + ' / ' + currentFile + '  |  size=' + data.size_bytes + ' bytes';
+      } catch (err) {
+        setError('Failed to load log tail: ' + err.message);
+      }
+    }
+
+    async function refreshAll(preferredFile) {
+      currentComponent = componentSelect.value || '';
+      await loadFiles(currentComponent, preferredFile || currentFile);
+      await loadTail();
+    }
+
+    componentSelect.addEventListener('change', () => {
+      refreshAll('');
+    });
+
+    refreshBtn.addEventListener('click', () => {
+      loadTail();
+    });
+
+    linesInput.addEventListener('change', () => {
+      loadTail();
+    });
+
+    refreshAll(initialFile).then(() => {
+      if (pollHandle) {
+        clearInterval(pollHandle);
+      }
+      pollHandle = setInterval(loadTail, 2000);
+    });
+  })();
+</script>
+</body>
+</html>
