@@ -18,6 +18,13 @@ fail() {
   exit 1
 }
 
+clean_data_dir() {
+  mkdir -p data
+  # Use a container to remove root-owned bind-mount files safely.
+  docker run --rm -v "$ROOT_DIR/data:/target" alpine:3.20 sh -lc \
+    'rm -rf /target/* /target/.[!.]* /target/..?* 2>/dev/null || true'
+}
+
 wait_for_app() {
   local start_ts now elapsed
   start_ts="$(date +%s)"
@@ -45,7 +52,10 @@ tmp_body="$(mktemp)"
 trap 'rm -f "$tmp_cookie" "$tmp_headers" "$tmp_body"' EXIT
 
 log "Resetting stack and volumes (clean state)..."
-docker compose down -v --remove-orphans
+docker compose down -v --remove-orphans || true
+
+log "Cleaning local data directory..."
+clean_data_dir
 
 log "Starting core services (redis + ollama)..."
 docker compose up -d --build redis ollama
