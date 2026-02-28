@@ -65,7 +65,13 @@ trap 'rm -f "$tmp_cookie" "$tmp_headers" "$tmp_body"' EXIT
 
 log "Preparing deterministic baseline..."
 docker compose down -v --remove-orphans
-docker compose up -d --build app worker redis ollama
+docker compose up -d --build redis ollama
+
+log "Initializing Ollama model via ollama-init..."
+docker compose run --rm ollama-init
+
+log "Starting app services..."
+docker compose up -d --build app worker
 
 log "Waiting for app readiness on $BASE_URL..."
 wait_for_app || fail "App did not become ready within ${STARTUP_TIMEOUT_SECONDS}s"
