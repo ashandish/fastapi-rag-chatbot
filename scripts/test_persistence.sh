@@ -9,6 +9,7 @@ ADMIN_USERNAME="${ADMIN_USERNAME:-admin}"
 BOOTSTRAP_PASSWORD="${BOOTSTRAP_PASSWORD:-Strongpassword123#}"
 NEW_PASSWORD="${NEW_PASSWORD:-PersistPass123#}"
 STARTUP_TIMEOUT_SECONDS="${STARTUP_TIMEOUT_SECONDS:-240}"
+TMP_DOCKER_CONFIG_DIR=""
 
 log() {
   echo "[persistence] $*"
@@ -17,6 +18,58 @@ log() {
 fail() {
   echo "[persistence] ERROR: $*" >&2
   exit 1
+}
+
+cleanup() {
+  rm -f "$tmp_cookie" "$tmp_headers" "$tmp_body"
+  if [[ -n "$TMP_DOCKER_CONFIG_DIR" ]]; then
+    rm -rf "$TMP_DOCKER_CONFIG_DIR"
+  fi
+}
+
+ensure_docker_auth_works() {
+  local config_root config_file creds_store helper
+  config_root="${DOCKER_CONFIG:-$HOME/.docker}"
+  config_file="$config_root/config.json"
+  if [[ ! -f "$config_file" ]]; then
+    return 0
+  fi
+
+  creds_store="$(python3 - "$config_file" <<'PY'
+import json, os, sys
+p = os.path.expanduser(os.path.expandvars(sys.argv[1]))
+try:
+    with open(p, "r", encoding="utf-8") as f:
+        cfg = json.load(f)
+    creds_store = cfg.get("credsStore", "")
+    if not creds_store:
+        cred_helpers = cfg.get("credHelpers", {})
+        creds_store = (
+            cred_helpers.get("https://index.docker.io/v1/")
+            or cred_helpers.get("index.docker.io")
+            or cred_helpers.get("docker.io")
+            or ""
+        )
+    print(creds_store)
+except Exception:
+    print("")
+PY
+)"
+  if [[ -z "$creds_store" ]]; then
+    return 0
+  fi
+
+  helper="docker-credential-${creds_store}"
+  if ! command -v "$helper" >/dev/null 2>&1; then
+    return 0
+  fi
+
+  if ! printf '%s\n' "https://index.docker.io/v1/" | "$helper" get >/dev/null 2>&1; then
+    TMP_DOCKER_CONFIG_DIR="$(mktemp -d)"
+    printf '{}\n' > "$TMP_DOCKER_CONFIG_DIR/config.json"
+    export DOCKER_CONFIG="$TMP_DOCKER_CONFIG_DIR"
+    log "Docker credential helper ($helper) failed; using temporary no-creds DOCKER_CONFIG for this run."
+  fi
 }
 
 wait_for_app() {
@@ -61,7 +114,9 @@ post_login() {
 tmp_cookie="$(mktemp)"
 tmp_headers="$(mktemp)"
 tmp_body="$(mktemp)"
-trap 'rm -f "$tmp_cookie" "$tmp_headers" "$tmp_body"' EXIT
+trap cleanup EXIT
+
+ensure_docker_auth_works
 
 log "Preparing deterministic baseline..."
 docker compose down -v --remove-orphans

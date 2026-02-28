@@ -27,23 +27,29 @@ cleanup() {
 }
 
 ensure_docker_auth_works() {
-  local config_file creds_store helper
-  if [[ -n "${DOCKER_CONFIG:-}" ]]; then
-    return 0
-  fi
-
-  config_file="$HOME/.docker/config.json"
+  local config_root config_file creds_store helper
+  config_root="${DOCKER_CONFIG:-$HOME/.docker}"
+  config_file="$config_root/config.json"
   if [[ ! -f "$config_file" ]]; then
     return 0
   fi
 
-  creds_store="$(python3 - <<'PY'
-import json, os
-p = os.path.expanduser("~/.docker/config.json")
+  creds_store="$(python3 - "$config_file" <<'PY'
+import json, os, sys
+p = os.path.expanduser(os.path.expandvars(sys.argv[1]))
 try:
     with open(p, "r", encoding="utf-8") as f:
         cfg = json.load(f)
-    print(cfg.get("credsStore", ""))
+    creds_store = cfg.get("credsStore", "")
+    if not creds_store:
+        cred_helpers = cfg.get("credHelpers", {})
+        creds_store = (
+            cred_helpers.get("https://index.docker.io/v1/")
+            or cred_helpers.get("index.docker.io")
+            or cred_helpers.get("docker.io")
+            or ""
+        )
+    print(creds_store)
 except Exception:
     print("")
 PY
@@ -61,7 +67,7 @@ PY
     TMP_DOCKER_CONFIG_DIR="$(mktemp -d)"
     printf '{}\n' > "$TMP_DOCKER_CONFIG_DIR/config.json"
     export DOCKER_CONFIG="$TMP_DOCKER_CONFIG_DIR"
-    log "Docker credential helper failed; using temporary no-creds DOCKER_CONFIG for this run."
+    log "Docker credential helper ($helper) failed; using temporary no-creds DOCKER_CONFIG for this run."
   fi
 }
 
