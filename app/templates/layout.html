@@ -23,6 +23,18 @@
     <main class="container">
       <section class="card">
         <h2>Welcome</h2>
+        {% if index_status.is_built %}
+          <div class="flash ok">{{ index_status.message }}</div>
+        {% else %}
+          <div class="flash err">
+            {{ index_status.message }}
+            {% if is_admin %}
+              Go to <a href="/embeddings">Generate Embeddings</a> to build the retrieval database.
+            {% else %}
+              Ask an admin to build embeddings from <a href="/admin/login">Admin</a>.
+            {% endif %}
+          </div>
+        {% endif %}
         <p>
           Admins can manage embeddings via the Admin link.<br />
           Users can chat at <a href="/chat">/chat</a>.

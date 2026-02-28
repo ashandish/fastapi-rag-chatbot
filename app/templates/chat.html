@@ -22,6 +22,18 @@
 </header>
 <main class="container">
   <section class="card">
+    {% if index_status.is_built %}
+      <div class="flash ok">{{ index_status.message }}</div>
+    {% else %}
+      <div class="flash err">
+        {{ index_status.message }}
+        {% if is_admin %}
+          Build it from <a href="/embeddings">Generate Embeddings</a>.
+        {% else %}
+          Ask an admin to build embeddings from <a href="/admin/login">Admin</a>.
+        {% endif %}
+      </div>
+    {% endif %}
     <div id="messages" class="messages"></div>
     <div class="composer">
       <input id="input" placeholder="Type your question..." />

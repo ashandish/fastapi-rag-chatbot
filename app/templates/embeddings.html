@@ -18,6 +18,11 @@
 </header>
 <main class="container">
   <section class="card">
+    {% if index_status.is_built %}
+      <div class="flash ok">{{ index_status.message }}</div>
+    {% else %}
+      <div class="flash err">{{ index_status.message }}</div>
+    {% endif %}
     <div id="step-upload">
       <p class="notice">Upload one or more documents, then click Process.</p>
       <div class="actions">

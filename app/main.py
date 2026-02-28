@@ -6,7 +6,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from .models import settings, UPLOAD_DIR
-from .embeddings import save_upload, get_text_embedder
+from .embeddings import save_upload, get_text_embedder, collection_size
 from .retrieval import answer_question, get_reranker
 from .auth import configure_oauth, oauth
 from .admin_auth import (
@@ -27,6 +27,15 @@ from .auth_providers.auth0 import register_auth0
 from .auth_providers.saml import register_saml
 
 app = FastAPI(title="RAG Chatbot v11 — Multi-Auth")
+
+def _build_index_status() -> dict:
+    count = collection_size()
+    is_built = count > 0
+    return {
+        "is_built": is_built,
+        "count": count,
+        "message": f"Embeddings are built ({count} chunk{'s' if count != 1 else ''} indexed)." if is_built else "Embeddings are not built yet.",
+    }
 
 # Preload heavy models when the app boots so first requests do not time out.
 @app.on_event("startup")
@@ -72,7 +81,14 @@ r = redis.Redis(host="redis", port=6379, db=2, decode_responses=True)
 
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
-    return templates.TemplateResponse("layout.html", {"request": request, "is_admin": is_admin(request)})
+    return templates.TemplateResponse(
+        "layout.html",
+        {
+            "request": request,
+            "is_admin": is_admin(request),
+            "index_status": _build_index_status(),
+        },
+    )
 
 @app.get("/admin/login", response_class=HTMLResponse)
 async def admin_login_form(request: Request):
@@ -104,7 +120,10 @@ async def admin_change_password_submit(
 async def embeddings_get(request: Request, _: None = Depends(require_admin)):
     if request.session.get("must_change") or is_default_password():
         return RedirectResponse(url="/admin/change-password?notice=default", status_code=303)
-    return templates.TemplateResponse("embeddings.html", {"request": request, "is_admin": True})
+    return templates.TemplateResponse(
+        "embeddings.html",
+        {"request": request, "is_admin": True, "index_status": _build_index_status()},
+    )
 
 @app.post("/embeddings/process")
 async def embeddings_process(
@@ -188,7 +207,12 @@ async def embeddings_progress(job_id: str, request: Request, _: None = Depends(r
 async def chat_page(request: Request):
     return templates.TemplateResponse(
         "chat.html",
-        {"request": request, "is_admin": is_admin(request), "welcome": settings.chatbot_welcome_msg},
+        {
+            "request": request,
+            "is_admin": is_admin(request),
+            "welcome": settings.chatbot_welcome_msg,
+            "index_status": _build_index_status(),
+        },
     )
 
 @app.websocket("/ws/chat")
