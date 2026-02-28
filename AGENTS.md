@@ -22,6 +22,12 @@
   docker compose logs -f app
   docker compose logs -f worker
   ```
+- Run clean-state smoke checks (admin bootstrap + password persistence):
+  ```bash
+  ./scripts/test_fresh_start.sh
+  ./scripts/test_persistence.sh
+  ```
+  Both scripts reset Docker volumes (`docker compose down -v`), start `redis` + `ollama`, run `ollama-init` to pull the configured model, then start `app`/`worker`.
 
 ## Coding Style & Naming Conventions
 - Python 3.11; follow PEP 8 with 4-space indents; prefer type hints for functions.
@@ -33,6 +39,7 @@
 - No formal test suite present; prefer adding fast unit tests with `pytest` if contributing.
 - Name tests `test_<feature>.py`; keep them deterministic and side-effect free (avoid hitting OpenAI/Redis/Chroma—mock or fixture).
 - If adding Celery logic, include a unit-level test for progress callbacks where possible.
+- For end-to-end admin/auth sanity checks, prefer `scripts/test_fresh_start.sh` and `scripts/test_persistence.sh` before manual UI testing.
 
 ## Commit & Pull Request Guidelines
 - Use clear, descriptive commit messages in imperative mood (e.g., "Add redis progress polling").
